@@ -1433,6 +1433,7 @@ config BUILD_ARM64_APPENDED_DTB_IMAGE
           The image will built in arch/arm64/boot/Image.gz-dtb
 
 
+
 config BUILD_ARM64_DTB_OVERLAY_IMAGE
         bool "Build a device tree overlay image"
         depends on OF
