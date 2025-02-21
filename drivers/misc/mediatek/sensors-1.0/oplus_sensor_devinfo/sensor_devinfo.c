@@ -4,6 +4,8 @@
  */
 #include <linux/uaccess.h>
 #include <linux/module.h>
+#include <linux/types.h>
+#include <linux/stddef.h>
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
 #include <linux/fs.h>
@@ -67,7 +69,7 @@ enum {
 #define DEVINFO_LOG(fmt, args...)   pr_err(DEV_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 
 #define UINT2Ptr(n)     (uint32_t *)(n)
-#define Ptr2UINT32(p)   (uint32_t)(p)
+#define Ptr2UINT32(p)   ((uint32_t)(uintptr_t)(p))
 #define MAG_PARA_OFFSET               8
 /*#define SOURCE_NUM                    3*/
 #define MAG_PARA_NUM                  9
@@ -851,8 +853,8 @@ static int als_cali_read_func(struct seq_file *s, void *v)
 {
 	void *p = s->private;
 
-	DEVINFO_LOG("Ptr2UINT32(p) = %d \n", Ptr2UINT32(p));
-	switch (Ptr2UINT32(p)) {
+	DEVINFO_LOG("((uint32_t)(uintptr_t)(p)) = %d \n", ((uint32_t)(uintptr_t)(p)));
+	switch ((uint32_t)(uintptr_t)(p)) {
 	case RED_MAX_LUX:
 		seq_printf(s, "%d", gdata->red_max_lux);
 		break;
@@ -1513,7 +1515,7 @@ int get_msensor_parameter(int num)
 	return 0;
 }
 
-void  mag_soft_parameter_init()
+void  mag_soft_parameter_init(void)
 {
 	int ret = -1;
 	int index = 0;
@@ -1535,7 +1537,7 @@ static int sensor_feature_read_func(struct seq_file *s, void *v)
 	int selftest_result = 0;
 
 	DEVINFO_LOG("Ptr2UINT32(p) = %d \n", Ptr2UINT32(p));
-	switch (Ptr2UINT32(p)) {
+	switch ((uint32_t)(uintptr_t)(p)) {
 	case IS_SUPPROT_HWCALI:
 		if (!strcmp(sensorlist_info[ps].name, "tcs3701")) {
 			seq_printf(s, "%d", 1);
