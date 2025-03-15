@@ -565,7 +565,7 @@ static void night_mode(kal_bool enable)
 *
 *************************************************************************/
 
-kal_uint16 addr_data_pair_init_ov8856[] = {
+static kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x0103, 0x01,
 	0x0302, 0x3c,
 	0x0303, 0x01,
@@ -784,7 +784,7 @@ static void sensor_init(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-kal_uint16 addr_data_pair_preview_ov8856[] = {
+static kal_uint16 addr_data_pair_preview_ov8856[] = {
 	0x3501, 0x4c,
 	0x3502, 0xe0,
 	0x366e, 0x08,
@@ -864,7 +864,7 @@ static void preview_setting(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-kal_uint16 addr_data_pair_capture_30fps_ov8856[] = {
+static kal_uint16 addr_data_pair_capture_30fps_ov8856[] = {
 	0x3501, 0x9a,
 	0x3502, 0x20,
 	0x366e, 0x10,
@@ -919,7 +919,7 @@ kal_uint16 addr_data_pair_capture_30fps_ov8856[] = {
 	0x5e10, 0xfc,
 };
 
-kal_uint16 addr_data_pair_capture_15fps_ov8856[] = {
+static kal_uint16 addr_data_pair_capture_15fps_ov8856[] = {
 	0x3501, 0x9a,
 	0x3502, 0x20,
 	0x366e, 0x10,
@@ -1014,7 +1014,7 @@ static void capture_setting(kal_uint16 currefps)
 *************************************************************************/
 
 
-kal_uint16 addr_data_pair_vga_setting_120fps_ov8856[] = {
+static kal_uint16 addr_data_pair_vga_setting_120fps_ov8856[] = {
 	0x3501, 0x25,
 	0x3502, 0xc0,
 	0x366e, 0x08,
