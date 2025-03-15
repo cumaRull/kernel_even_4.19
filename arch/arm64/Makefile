@@ -187,6 +187,7 @@ ifeq ($(KBUILD_EXTMOD),)
 # asm-offsets.h is built in prepare0, for which archprepare is a dependency.
 # Therefore we need to generate the header after prepare0 has been made, hence
 # this hack.
+PHONY += prepare0
 prepare: vdso_prepare
 vdso_prepare: prepare0
 	$(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso include/generated/vdso-offsets.h
