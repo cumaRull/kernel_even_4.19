@@ -43,14 +43,6 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{EVENC_SHENGTAI_MACRO_OV02B10_SENSOR_ID, 0xA4, Common_read_region},
 #endif
 
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-    /*cengshang@vanyol.com 2020.09.02 for pacalA-R  otp porting */
-    {PASCALA_TRULY_MAIN_S5KGM1SP_SENSOR_ID,0XA0,Common_read_region,MAX_EEPROM_SIZE_16K},
-    {PASCALA_SHENGTAI_WIDE_OV8856_SENSOR_ID,0XA2,Common_read_region,MAX_EEPROM_SIZE_16K},
-    {PASCALA_SHENGTAI_MACRO_OV02B10_SENSOR_ID,0XA4,Common_read_region,MAX_EEPROM_SIZE_16K},
-    {PASCALA_TRULY2_MAIN_S5KGM1SP_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
-#endif
-
 	/*B+B. No Cal data for main2 OV8856*/
 	{S5K2P7_SENSOR_ID, 0xA0, Common_read_region},
 #ifdef SUPPORT_S5K4H7

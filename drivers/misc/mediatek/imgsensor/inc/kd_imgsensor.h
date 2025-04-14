@@ -1145,17 +1145,6 @@
 #define SENSOR_DRVNAME_GC02M1_MIPI_RAW_21651          "gc02m1_mipi_raw_21651"
 
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
-/*cengshang@vanyol.com, 20200909,  add for pascalR sensor porting*/
-#define PASCALA_TRULY_MAIN_S5KGM1SP_SENSOR_ID           0x08D2
-#define SENSOR_DRVNAME_PASCALA_TRULY_MAIN_S5KGM1SP     "pascala_truly_main_s5kgm1sp"
-#define PASCALA_HLT_FRONT_S5K4H7_SENSOR_ID              0x487C
-#define SENSOR_DRVNAME_PASCALA_HLT_FRONT_S5K4H7        "pascala_hlt_front_s5k4h7"
-#define PASCALA_SHENGTAI_WIDE_OV8856_SENSOR_ID          0x885B
-#define SENSOR_DRVNAME_PASCALA_SHENGTAI_WIDE_OV8856    "pascala_shengtai_wide_ov8856"
-#define PASCALA_SHENGTAI_MACRO_OV02B10_SENSOR_ID        0x0030
-#define SENSOR_DRVNAME_PASCALA_SHENGTAI_MACRO_OV02B10  "pascala_shengtai_macro_ov02b10"
-#define PASCALA_TRULY2_MAIN_S5KGM1SP_SENSOR_ID          0x08D3
-#define SENSOR_DRVNAME_PASCALA_TRULY2_MAIN_S5KGM1SP    "pascala_truly2_main_s5kgm1sp"
 /*even*/
 #define EVEN_QTECH_MAIN_S5KGM1ST03_SENSOR_ID                   0xF8D4
 #define SENSOR_DRVNAME_EVEN_QTECH_MAIN_S5KGM1ST03     "even_qtech_main_s5kgm1st03"
