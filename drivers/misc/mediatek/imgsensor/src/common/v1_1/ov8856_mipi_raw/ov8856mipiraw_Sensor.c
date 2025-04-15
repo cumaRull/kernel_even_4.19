@@ -747,7 +747,7 @@ static void night_mode(kal_bool enable)
  *
  *************************************************************************/
 
-static kal_uint16 addr_data_pair_init_ov8856[] = {
+kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x0103, 0x01,
 	0x0302, 0x3c,
 	0x0303, 0x01,
@@ -969,7 +969,7 @@ static void sensor_init(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static kal_uint16 addr_data_pair_preview_ov8856[] = {
+kal_uint16 addr_data_pair_preview_ov8856[] = {
 	0x3501, 0x4c,
 	0x3502, 0xe0,
 	0x366e, 0x08,
@@ -1046,7 +1046,7 @@ static void preview_setting(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static kal_uint16 addr_data_pair_capture_30fps_ov8856[] = {
+kal_uint16 addr_data_pair_capture_30fps_ov8856[] = {
 	0x3501, 0x9a,
 	0x3502, 0x20,
 	0x366e, 0x10,
