@@ -94,7 +94,6 @@
 			drive-strength = <3>;
 		};
 	};
-	/*
 	mmc0_pins_pull_down: mmc0@1{
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO123__FUNC_MSDC0_DAT0>,
