@@ -2099,7 +2099,6 @@
 		pu_cfg = <0xa0>;
 		rsel_cfg = <0xe0>;
 		aed = <0x1a>;
-		apdma_size = <255>;
 	};
 
 	i2c9: i2c9@11019000 {
@@ -4763,9 +4762,9 @@
 		svp-region-based-size = <0 0x10000000>;
 		iris-recognition-size = <0 0x10000000>;
 		2d_fr-size = <0 0>;
-		tui-size = <0 0x4000000>;
+		tui-size = <0 0>;
 		wfd-size = <0 0x4000000>;
-		prot-region-based-size = <0 0x8000000>;
+		prot-region-based-size = <0 0>;
 		ta-elf-size = <0 0x1000000>;
 		ta-stack-heap-size = <0 0x6000000>;
 		sdsp-tee-sharedmem-size = <0 0x1000000>;

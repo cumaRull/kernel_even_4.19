@@ -212,6 +212,8 @@
 		cali_jitter_limit = <30>;
 		cal_offset_margin = <3000>;
 		is_use_force_cali = <1>;
+		enable_low_threshold = <5000>;
+		enable_high_threshold = <5001>;
 	};
 	proximity_2: proximity_2 {
 		status = "okay";
@@ -823,7 +825,9 @@
 	oplus_display_cabc_cmdq_support;
 	oplus_display_panelnum_support;
 	oplus_display_mt6382_support;
+	oplus_display_async_bl_support;
 	oplus_display_normal_max_brightness = <2047>;
+	mininum_brightness = <14>;
 };
 
 
@@ -966,6 +970,7 @@
 		};
 };
 #include "mediatek/oplus6769_charger_226AF.dtsi"
+#include <oplus6769_226AF/cust.dtsi>
 #include "mediatek/cust_mt6769_camera_miami.dtsi"
 #include "mediatek/cust_mt6769_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6769_sia8102.dtsi"

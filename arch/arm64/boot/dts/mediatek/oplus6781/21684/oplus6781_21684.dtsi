@@ -41,14 +41,38 @@
 };
 
 &mt6370_pmu {
-	charger {
-			ichg = <2200000>;	/* uA */
-			mivr = <4200000>;	/* uV */
-			cv = <4435000>;		/* uA */
-			safety_timer = <20>;	/* hour */
-			ircmp_resistor = <0>;	/* uohm */
-			ircmp_vclamp = <0>;		/* uV */
+	mt6370_chg: charger {
+		ichg = <2200000>;	/* uA */
+		mivr = <4200000>;	/* uV */
+		cv = <4435000>;		/* uA */
+		safety_timer = <20>;	/* hour */
+		ircmp_resistor = <0>;	/* uohm */
+		ircmp_vclamp = <0>;		/* uV */
+	};
+};
+
+&odm {
+	mediatek_phy_tuning: mediatek_phy_tuning {
+		phy_tuning {
+			compatible = "mediatek,phy_tuning";
+			eye-vrt = <7>;
+			eye-term = <7>;
+			eye-rev6 = <3>;
+
+			host-eye-vrt = <2>;
+			host-eye-term = <2>;
+			host-eye-rev6 = <2>;
 		};
+	};
+
+	oplus,track-charge {
+		compatible = "oplus,track-charge";
+		track,fast_chg_break_t_thd = <1400>;
+		track,general_chg_break_t_thd = <2200>;
+		track,voocphy_type = <2>;
+		track,wired_max_power = <33000>;
+		track,wired_fast_chg_scheme = <4>;
+	};
 };
 
 &charger {
@@ -176,6 +200,8 @@
 	qcom,temp_normal_phase6_vfloat_mv = <4435>;
 	qcom,temp_normal_phase6_fastchg_current_ma = <1400>;
 
+	qcom,smart_charging_screenoff;
+
 	qcom,warm_bat_decidegc = <450>;		/* 45C ~ 53C */ /*8pin Bat Vooc project need add 3 degree C*/
 	qcom,temp_warm_vfloat_mv = <4130>;
 	qcom,temp_warm_fastchg_current_ma = <1400>;
@@ -222,6 +248,7 @@
 	qcom,vbatt_soc_1 = <3310>;
 	qcom,vooc_project = <5>;
 	qcom,vbatt_num = <1>;
+	voocphy_support_display_vooc;
 
 	qcom,normal_vterm_hw_inc = <18>;
 	qcom,non_normal_vterm_hw_inc = <18>;
@@ -348,26 +375,26 @@
 		qcom,vooc_normal_to_little_cool_current = <100>;
 		qcom,vooc_batt_over_high_temp = <510>;
 		qcom,vooc-low-temp = <0>;
-		qcom,vooc-high-temp = <500>;
+		qcom,vooc-high-temp = <420>;
 		qcom,vooc-low-soc = <0>;
 		qcom,vooc-high-soc = <90>;
 		qcom,vooc-normal-high-temp = <430>;
 		qcom,vooc-warm-allow-vol = <4000>;
 		qcom,vooc-warm-allow-soc = <50>;
 
-		qcom,vooc_strategy1_batt_high_temp0 = <385>;
-		qcom,vooc_strategy1_batt_high_temp1 = <395>;
+		qcom,vooc_strategy1_batt_high_temp0 = <375>;
+		qcom,vooc_strategy1_batt_high_temp1 = <385>;
 		qcom,vooc_strategy1_batt_high_temp2 = <420>;
-		qcom,vooc_strategy1_batt_low_temp2 = <410>;
-		qcom,vooc_strategy1_batt_low_temp1 = <385>;
-		qcom,vooc_strategy1_batt_low_temp0 = <375>;
+		qcom,vooc_strategy1_batt_low_temp2 = <405>;
+		qcom,vooc_strategy1_batt_low_temp1 = <375>;
+		qcom,vooc_strategy1_batt_low_temp0 = <365>;
 
-		qcom,vooc_strategy1_high_current0 = <60>;
-		qcom,vooc_strategy1_high_current1 = <60>;
-		qcom,vooc_strategy1_high_current2 = <40>;
-		qcom,vooc_strategy1_low_current2 = <60>;
-		qcom,vooc_strategy1_low_current1 = <60>;
-		qcom,vooc_strategy1_low_current0 = <100>;
+		qcom,vooc_strategy1_high_current0 = <40>;
+		qcom,vooc_strategy1_high_current1 = <30>;
+		qcom,vooc_strategy1_high_current2 = <20>;
+		qcom,vooc_strategy1_low_current2 = <30>;
+		qcom,vooc_strategy1_low_current1 = <40>;
+		qcom,vooc_strategy1_low_current0 = <50>;
 
 		qcom,voocphy_ibat_over_current = <7500>;
 		qcom,voocphy_cp_max_ibus = <3500>;

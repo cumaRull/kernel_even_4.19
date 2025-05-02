@@ -14,14 +14,25 @@
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
 &mt6370_pmu {
-	mt6370_chg {
-			ichg = <2200000>;	/* uA */
-			mivr = <4500000>;	/* uV */
-			cv = <4435000>;		/* uA */
-			safety_timer = <20>;	/* hour */
-			ircmp_resistor = <0>;	/* uohm */
-			ircmp_vclamp = <0>;		/* uV */
-		};
+	mt6370_chg: charger {
+		ichg = <2200000>;	/* uA */
+		mivr = <4500000>;	/* uV */
+		cv = <4435000>;		/* uA */
+		safety_timer = <20>;	/* hour */
+		ircmp_resistor = <0>;	/* uohm */
+		ircmp_vclamp = <0>;		/* uV */
+	};
+};
+
+&odm {
+	oplus,track-charge {
+		compatible = "oplus,track-charge";
+		track,fast_chg_break_t_thd = <1400>;
+		track,general_chg_break_t_thd = <2200>;
+		track,voocphy_type = <0>;
+		track,wired_max_power = <18000>;
+		track,wired_fast_chg_scheme = <6>;
+	};
 };
 
 &charger {
@@ -236,7 +247,7 @@
 	qcom,slave_chg_enable_ma = <1000>;
 	qcom,slave_chg_disable_ma = <700>;
 	//GPIO config:
-	qcom,chargerid_switch-gpio = <&pio 36 0x00>;
+	/*qcom,chargerid_switch-gpio = <&pio 36 0x00>;*/
 	//qcom,ship-gpio = <&pio 69 0x00>;
 	qcom,dischg-gpio = <&pio 15 0x00>;
 	//qcom,shortc-gpio = <&pio 121 0x00>;

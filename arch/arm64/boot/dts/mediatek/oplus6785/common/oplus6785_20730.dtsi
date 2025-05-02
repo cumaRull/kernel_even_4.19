@@ -103,6 +103,7 @@
 		touchpanel,panel-coords = <1080 2400>;
 		touchpanel,display-coords = <1080 2400>;
 		touchpanel,touchmajor-limit = <0 54>;
+		touchpanel,msecs-to-jiffies-time = <500>;
 		tp_type = <8>;
 		panel_type = <8>;
 		firmware_name = "focalt_";
@@ -148,6 +149,7 @@
                 touchpanel,panel-coords = <1080 2400>;
                 touchpanel,display-coords = <1080 2400>;
                 touchpanel,touchmajor-limit = <0 54>;
+		touchpanel,msecs-to-jiffies-time = <500>;
                 tp_type = <8>;
                 panel_type = <8>;
                 firmware_name = "goodix_";
@@ -591,6 +593,12 @@
 		regulator-always-on;
 	};
 };
+&mmc1 {
+	cd-gpios = <&pio 8 0>;
+	status = "okay";
+	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
+};
+
 &mt6360_ldo {
 	ldo5_ctrls = [00 80 01 2d a4];
 	sdcard_det_en = <1>;
@@ -1196,11 +1204,11 @@ gpio_goodix_cs_func: gpio_goodix_cs_func {
 };
 
 &odm {
-	phy_tuning {
+	mediatek_phy_tuning {
 		compatible = "mediatek,phy_tuning";
-		u2_vrt_ref = <6>;
-		u2_term_ref = <6>;
-		u2_enhance = <2>;
+		eye-vrt = <6>;
+		eye-term = <6>;
+		eye-rev6 = <2>;
 	};
 };
 

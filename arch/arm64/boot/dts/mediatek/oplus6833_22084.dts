@@ -542,6 +542,20 @@
 			};
 		};
 	};
+	panel32@0 {
+		compatible = "oplus22083,boe,ili9883c,dphy,vdo";
+		reg = <2>;
+		reset-gpios = <&pio 86 0>;
+		ldo-gpios = <&pio 41 0>;
+		bias-gpios = <&pio 137 0>,
+				<&pio 138 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in32: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
 
 	ports {
 		port {

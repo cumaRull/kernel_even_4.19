@@ -42,19 +42,6 @@
 };
 
 &odm {
-	phy_tuning {
-		compatible = "mediatek,phy_tuning";
-		u2_vrt_ref = <4>;
-		u2_term_ref = <4>;
-		u2_enhance = <3>;
-
-		host_u2_vrt_ref = <2>;
-		host_u2_term_ref = <2>;
-		host_u2_enhance = <2>;
-	};
-};
-
-&odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
 		led_mode = <0>;
@@ -639,7 +626,7 @@
 		touchpanel,display-coords = <1080 2412>;
 		touchpanel,touchmajor-limit = <0 54>;
 		pinctrl-names = "default","pin_set_low", "pin_set_high";
-		pinctrl-0 = <&ctp_novatek_spi_mode>;
+		pinctrl-0 = <&ctp_novatek_spi_mode>, <&ctp_novatek_clk_spi_mode>;
 
 		prevention,dead_area_width = <20 20>;
 		prevention,condition_area_width = <60 60 160 160>;
@@ -669,11 +656,17 @@
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO14__FUNC_SPI4_MI>,
 				<PINMUX_GPIO13__FUNC_SPI4_MO>,
-				<PINMUX_GPIO144__FUNC_SPI4_CLK>,
 				<PINMUX_GPIO145__FUNC_SPI4_CSB>;
 			drive-strength = <4>;
 		};
 	};
+	ctp_novatek_clk_spi_mode:ctp_novatek_clk_spi_mode{
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO144__FUNC_SPI4_CLK>;
+			mediatek,drive-strength-adv = <0>;/*EH[2:0]*/
+                        drive-strength = <4>;
+                };
+        };
 };
 
 &mt6370_pmu_bled {

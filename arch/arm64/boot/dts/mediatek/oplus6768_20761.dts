@@ -297,6 +297,15 @@
         chipset-20764 = "PN557";
     };
     //#endif /* OPLUS_FEATURE_NFC_CONSOFT */
+
+	oplus,track-charge {
+		compatible = "oplus,track-charge";
+		track,fast_chg_break_t_thd = <1400>;
+		track,general_chg_break_t_thd = <300>;
+		track,voocphy_type = <0>;
+		track,wired_max_power = <18000>;
+		track,wired_fast_chg_scheme = <6>;
+	};
 };
 &keypad {
 	keypad,volume-down	= <&pio 94 0x00>;
@@ -552,6 +561,35 @@
 	};
 };
 //#endif //OPLUS_FEATURE_FINGERPRINT
+
+&apuart0 {
+        pinctrl-names = "uart0_rx_gpio",
+                "uart0_tx_gpio";
+        pinctrl-0 = <&uart0_rx_gpio_input>;
+        pinctrl-1 = <&uart0_tx_gpio_input>;
+        status = "okay";
+};
+
+
+&pio {
+        uart0_rx_gpio_input:uart0_rx_gpio@gpio95 {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO95__FUNC_GPIO95>;
+                        input-enable;
+                        slew-rate = <0>;
+                        bias-pull-down;
+                };
+        };
+
+        uart0_tx_gpio_input:uart0_tx_gpio@gpio96 {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO96__FUNC_GPIO96>;
+                        input-enable;
+                        slew-rate = <0>;
+                        bias-pull-down;
+                };
+        };
+};
 
 /* accdet start */
 &accdet {
@@ -1004,6 +1042,7 @@
 &bat_gm30 {
 		FUELGAGUE_APPLY = <(1)>;
 		USE_MT6768 = <1>;
+		RBAT_PULL_UP_R = <(16000)>;
 		io-channels = <&auxadc 2>;
 		io-channel-names = "batteryID-channel";	
 };
@@ -1290,6 +1329,7 @@
 /* DISPSYS GPIO standardization end*/
 
 #include "mediatek/cust_mt6769_sia8101.dtsi"
+#include <oplus6768_20761/cust.dtsi>
 #include "mediatek/cust_mt6768_touch_720x1600.dtsi"
 #include "mediatek/cust_mt6768_camera_even.dtsi"
 #include "mediatek/cust_mt6768_touch_1080x2160.dtsi"
