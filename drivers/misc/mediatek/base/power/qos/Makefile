@@ -58,4 +58,3 @@ ccflags-$(QOS_SHARE_SUPPORT) += -DQOS_SHARE_SUPPORT
 
 # obj-y += $(MTK_PLATFORM)/
 endif
-endif
