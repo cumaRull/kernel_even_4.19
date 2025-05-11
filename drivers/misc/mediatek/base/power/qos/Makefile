@@ -42,7 +42,7 @@ endif
 
 ifeq ($(CONFIG_MACH_MT6877),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/qos/mt6877
-ifeq ($(CONFIG_MACH_MT6781),y)
+else ifeq ($(CONFIG_MACH_MT6781),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/qos/$(MTK_PLATFORM)/
 else
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/qos/$(CONFIG_MTK_PLATFORM)
@@ -57,5 +57,4 @@ obj-$(QOS_SHARE_SUPPORT) += mtk_qos_share.o
 ccflags-$(QOS_SHARE_SUPPORT) += -DQOS_SHARE_SUPPORT
 
 # obj-y += $(MTK_PLATFORM)/
-endif
 endif
