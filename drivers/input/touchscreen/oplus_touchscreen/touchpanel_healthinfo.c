@@ -807,7 +807,7 @@ void reset_healthinfo_grip_time_record(void *tp_monitor_data, void *tp_grip_info
 
 	if (!monitor_data) {
         return;
- 	}
+	}
 
     if (monitor_data->grip_time_record_flag == TYPE_START_RECORD) {
         monitor_data->total_grip_time_no_touch += ktime_to_ms(ktime_get()) - monitor_data->grip_start_time_no_touch;

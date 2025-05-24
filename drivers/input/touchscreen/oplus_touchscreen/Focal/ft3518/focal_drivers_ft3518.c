@@ -29,7 +29,7 @@
 
 #include "ft3518_core.h"
 
-struct fts_ts_data *fts_data = NULL;
+struct fts_ts_data *fts3518_data = NULL;
 extern int tp_register_times;
 
 /*******Part0:LOG TAG Declear********************/
@@ -111,55 +111,22 @@ enum GESTURE_ID {
     GESTURE_HEART_CLOCKWISE = 0x59,
 };
 
-/*******Pinctrl config for egpio active and suspend*******/
-
-int fts_pinctrl_select_active(struct fts_ts_data *fts_data)
-{
-	int ret = 0;
-
-	if (fts_data->hw_res->pinctrl && fts_data->hw_res->pin_set_reset_high) {
-		ret = pinctrl_select_state(fts_data->hw_res->pinctrl, fts_data->hw_res->pin_set_reset_high);
-		TPD_INFO("%s : ret = %d\n", __func__, ret);
-		if (ret < 0) {
-			TPD_INFO("Set active pin state error:%d", ret);
-			devm_pinctrl_put(fts_data->hw_res->pinctrl);
-			fts_data->hw_res->pinctrl = NULL;
-		}
-	}
-
-	return ret;
-}
-
-int fts_pinctrl_select_suspend(struct fts_ts_data *fts_data)
-{
-	int ret = 0;
-
-	if (fts_data->hw_res->pinctrl && fts_data->hw_res->pin_set_reset_low) {
-		ret = pinctrl_select_state(fts_data->hw_res->pinctrl , fts_data->hw_res->pin_set_reset_low);
-		TPD_INFO("%s : ret = %d\n", __func__, ret);
-		if (ret < 0) {
-			TPD_INFO("Set suspend pin state error:%d", ret);
-			devm_pinctrl_put(fts_data->hw_res->pinctrl);
-			fts_data->hw_res->pinctrl = NULL;
-		}
-	}
-
-	return ret;
-}
-
 /*******Part1:Call Back Function implement*******/
 static void fts_read_fod_info(struct fts_ts_data *ts_data);
 static int fts_get_gesture_info(void *chip_data, struct gesture_info *gesture);
-
-
+extern void __attribute__((weak)) tp_gpio_current_leakage_handler(bool normal)
+{
+	return;
+};
 
 static int fts_rstgpio_set(struct hw_resource *hw_res, bool on)
 {
-	if (fts_data->need_pinctrl_pull_up_reset) {
+	if (fts3518_data->reset_pinctrl) {	/*limit use pinctrl or normal to operate gpio*/
+		TPD_INFO("Use pinctrl to config gpio !\n");
 		if (on == true) {
-			fts_pinctrl_select_active(fts_data);
+			tp_gpio_current_leakage_handler(true);
 		} else {
-			fts_pinctrl_select_suspend(fts_data);
+			tp_gpio_current_leakage_handler(false);
 		}
 	} else {
 		if (gpio_is_valid(hw_res->reset_gpio)) {
@@ -616,7 +583,7 @@ fw_reset:
     return -EIO;
 }
 
-void fts_auto_test(struct seq_file *s, void *chip_data, struct focal_testdata *focal_testdata)
+void fts3518_auto_test(struct seq_file *s, void *chip_data, struct focal_testdata *focal_testdata)
 {
     struct fts_ts_data *ts_data = (struct fts_ts_data *)chip_data;
     int ret = 0;
@@ -625,7 +592,7 @@ void fts_auto_test(struct seq_file *s, void *chip_data, struct focal_testdata *f
     ts_data->csv_fd = focal_testdata->fd;
 
     focal_esd_check_enable(ts_data, false);
-    ret = fts_test_entry(ts_data);
+	ret = fts3518_test_entry(ts_data);
     tp_healthinfo_report(ts_data->monitor_data_v2, HEALTH_TEST_AUTO, &ret);
     focal_esd_check_enable(ts_data, true);
 }
@@ -1070,6 +1037,7 @@ static int fts_enable_black_gesture(struct fts_ts_data *ts_data, bool enable)
             SET_FTS_GESTURE(state, Up2DownSwip, config1, 3)
             SET_FTS_GESTURE(state, DouTap, config1, 4)
             SET_FTS_GESTURE(state, DouSwip, config1, 5)
+		SET_FTS_GESTURE(state, SingleTap, config1, 7)
             SET_FTS_GESTURE(state, Circle, config2, 0)
             SET_FTS_GESTURE(state, Wgestrue, config2, 1)
             SET_FTS_GESTURE(state, Mgestrue, config2, 2)
@@ -1873,6 +1841,7 @@ static void fts_enable_gesture_mask(void *chip_data, uint32_t enable)
     int config2 = 0;
     int config4 = 0;
     struct fts_ts_data *ts_data = (struct fts_ts_data *)chip_data;
+	int state = ts_data->gesture_state;
 
     if (enable) {
         config1 = 0xff;
@@ -1881,6 +1850,30 @@ static void fts_enable_gesture_mask(void *chip_data, uint32_t enable)
     } else if (!enable) {
 
     }
+	if (ts_data->black_gesture_indep) {
+        if (enable) {
+                SET_FTS_GESTURE(state, Right2LeftSwip, config1, 0)
+                SET_FTS_GESTURE(state, Left2RightSwip, config1, 1)
+                SET_FTS_GESTURE(state, Down2UpSwip, config1, 2)
+                SET_FTS_GESTURE(state, Up2DownSwip, config1, 3)
+                SET_FTS_GESTURE(state, DouTap, config1, 4)
+                SET_FTS_GESTURE(state, DouSwip, config1, 5)
+                SET_FTS_GESTURE(state, SingleTap, config1, 7)
+                SET_FTS_GESTURE(state, Circle, config2, 0)
+                SET_FTS_GESTURE(state, Wgestrue, config2, 1)
+                SET_FTS_GESTURE(state, Mgestrue, config2, 2)
+                SET_FTS_GESTURE(state, RightVee, config4, 1)
+                SET_FTS_GESTURE(state, LeftVee, config4, 2)
+                SET_FTS_GESTURE(state, DownVee, config4, 3)
+                SET_FTS_GESTURE(state, UpVee, config4, 4)
+                SET_GESTURE_BIT(state, Heart, config4, 5)
+	}	else {
+                config1 = 0;
+                config2 = 0;
+                config4 = 0;
+        }
+	}
+	TPD_INFO("%s: config1:%x, config2:%x config4:%x\n", __func__, config1, config2, config4);
     ret = touch_i2c_write_byte(ts_data->client, FTS_REG_GESTURE_CONFIG1, config1);
     if (ret < 0) {
         TPD_INFO("%s: write FTS_REG_GESTURE_CONFIG1 enable(%x=%x) fail", __func__, FTS_REG_GESTURE_CONFIG1, config1);
@@ -2025,7 +2018,7 @@ static struct oplus_touchpanel_operations fts_ops = {
 };
 
 static struct fts_proc_operations fts_proc_ops = {
-    .auto_test              = fts_auto_test,
+	.auto_test              = fts3518_auto_test,
 };
 
 static struct debug_info_proc_operations fts_debug_info_proc_ops = {
@@ -2037,7 +2030,7 @@ static struct debug_info_proc_operations fts_debug_info_proc_ops = {
 	.baseline_blackscreen_read = fts_baseline_read,
 };
 
-struct focal_debug_func focal_debug_ops = {
+struct focal_debug_func focal3518_debug_ops = {
     .esd_check_enable       = focal_esd_check_enable,
     .get_esd_check_flag     = focal_get_esd_check_flag,
     .get_fw_version         = focal_get_fw_version,
@@ -2081,7 +2074,6 @@ static int ft3518_parse_dts(struct fts_ts_data *ts_data, struct i2c_client *clie
 {
     struct device *dev;
     struct device_node *np;
-	int ret = 0;
 
     dev = &client->dev;
     np = dev->of_node;
@@ -2089,43 +2081,11 @@ static int ft3518_parse_dts(struct fts_ts_data *ts_data, struct i2c_client *clie
 	ts_data->high_resolution_support = of_property_read_bool(np, "high_resolution_support");
 	ts_data->high_resolution_support_x8 = of_property_read_bool(np, "high_resolution_support_x8");
 	TPD_INFO("%s:high_resolution_support is:%d %d\n", __func__, ts_data->high_resolution_support, ts_data->high_resolution_support_x8);
-	ts_data->need_pinctrl_pull_up_reset = of_property_read_bool(np, "need_pinctrl_pull_up_reset");
-	TPD_INFO("%s:need_pinctrl_pull_up_reset is: %d\n", __func__, ts_data->need_pinctrl_pull_up_reset);
+	ts_data->reset_pinctrl = of_property_read_bool(np, "reset-pinctrl");
+	TPD_INFO("%s: use pinctrl to control gpio = %d\n", __func__, ts_data->reset_pinctrl);
 
-	if (ts_data->need_pinctrl_pull_up_reset) {
-		ts_data->hw_res->pinctrl = devm_pinctrl_get(dev);
-		if (IS_ERR_OR_NULL(ts_data->hw_res->pinctrl)) {
-			TPD_INFO("Getting pinctrl handle failed");
-			ret = PTR_ERR(ts_data->hw_res->pinctrl);
-			goto err_pinctrl_get;
-		} else {
-			ts_data->hw_res->pin_set_reset_high = pinctrl_lookup_state(ts_data->hw_res->pinctrl, "pin_set_reset_high");
-			if (IS_ERR_OR_NULL(ts_data->hw_res->pin_set_reset_high)) {
-				TPD_INFO("Failed to get reset high state pinctrl handle\n");
-				ret = PTR_ERR(ts_data->hw_res->pin_set_reset_high);
-				goto err_pinctrl_lookup;
-			}
-
-			ts_data->hw_res->pin_set_reset_low = pinctrl_lookup_state(ts_data->hw_res->pinctrl, "pin_set_reset_low");
-			if (IS_ERR_OR_NULL(ts_data->hw_res->pin_set_reset_low)) {
-				TPD_INFO(" Failed to get reset low state pinctrl handle\n");
-				ret = PTR_ERR(ts_data->hw_res->pin_set_reset_low);
-				goto err_pinctrl_lookup;
-			}
-		}
-	}
 	return 0;
 
-err_pinctrl_lookup:
-	if (ts_data->hw_res->pinctrl) {
-		devm_pinctrl_put(ts_data->hw_res->pinctrl);
-	}
-err_pinctrl_get:
-	ts_data->hw_res->pinctrl = NULL;
-	ts_data->hw_res->pin_set_reset_low = NULL;
-	ts_data->hw_res->pin_set_reset_high = NULL;
-
-	return ret;
 }
 
 static int fts_tp_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -2151,7 +2111,7 @@ static int fts_tp_probe(struct i2c_client *client, const struct i2c_device_id *i
         return ret;
     }
     memset(ts_data, 0, sizeof(*ts_data));
-    fts_data = ts_data;
+	fts3518_data = ts_data;
 
     /*step2:Alloc common ts*/
     ts = common_touch_data_alloc();
@@ -2178,7 +2138,7 @@ static int fts_tp_probe(struct i2c_client *client, const struct i2c_device_id *i
 
     /*step4:file_operations callback binding*/
     ts->ts_ops = &fts_ops;
-    ts->private_data = &focal_debug_ops;
+	ts->private_data = &focal3518_debug_ops;
     ts->aging_test_ops = &ft3518_aging_test_ops;
     ft3518_parse_dts(ts_data, client);
 

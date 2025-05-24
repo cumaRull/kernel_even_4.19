@@ -42,6 +42,8 @@ extern int sysctl_sched_animation_type_handler(struct ctl_table *table, int writ
 extern int sysctl_sched_boost_task_threshold_handler(struct ctl_table *table, int write, void __user *buffer, size_t *lenp, loff_t *ppos);
 extern int sysctl_sched_assist_input_boost_ctrl_handler(struct ctl_table * table, int write, void __user * buffer, size_t * lenp, loff_t * ppos);
 extern bool keep_slide_nolimit(struct task_struct *p);
+bool slide_boost_scene(void);
+bool slide_rt_boost(struct task_struct *p);
 
 static bool inline check_slide_scene(void)
 {

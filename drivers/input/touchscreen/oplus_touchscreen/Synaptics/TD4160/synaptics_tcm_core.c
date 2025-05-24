@@ -3284,7 +3284,7 @@ static int syna_tcm_async_work(void *chip_data)
 	return 0;
 }
 
-static void copy_fw_to_buffer(struct syna_tcm_hcd *tcm_hcd, const struct firmware *fw)
+static fw_update_state copy_fw_to_buffer(struct syna_tcm_hcd *tcm_hcd, const struct firmware *fw)
 {
 	struct firmware *tp_fw;
     if (fw) {
@@ -3300,12 +3300,14 @@ static void copy_fw_to_buffer(struct syna_tcm_hcd *tcm_hcd, const struct firmwar
 		tp_fw = vmalloc(sizeof(struct firmware));
 		if(!tp_fw) {
 			TPD_INFO("vmalloc tp firmware error\n");
-			goto exit;
+			return FW_UPDATE_ERROR;
 		}
 		tp_fw->data = vmalloc(fw->size);
 		if(!tp_fw->data) {
 			TPD_INFO("vmalloc tp firmware data error\n");
-			goto exit;
+			vfree(tp_fw);
+			tp_fw = NULL;
+			return FW_UPDATE_ERROR;
 		}
 		memcpy((u8 *)tp_fw->data, (u8 *)(fw->data), fw->size);
 		tp_fw->size = fw->size;
@@ -3316,13 +3318,10 @@ static void copy_fw_to_buffer(struct syna_tcm_hcd *tcm_hcd, const struct firmwar
     }
 	else {
 		TPD_INFO("failed to get oplus tp firmware.\n");
+		return FW_UPDATE_ERROR;
 	}
-	return;
+	return FW_UPDATE_SUCCESS;
 
-exit:
-	if(tp_fw) {
-		vfree(tp_fw);
-	}
 }
 
 
@@ -3335,7 +3334,7 @@ static fw_update_state syna_tcm_fw_update(void *chip_data, const struct firmware
 	struct syna_tcm_hcd *tcm_hcd = (struct syna_tcm_hcd *)chip_data;
 	TPD_INFO("syna_tcm_fw_update begin\n");
 
-	copy_fw_to_buffer(tcm_hcd, fw);
+	ret = copy_fw_to_buffer(tcm_hcd, fw);
 	tcm_hcd->tp_fw_update_parse = true;
 
 	syna_reset_gpio(tcm_hcd, false);

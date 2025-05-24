@@ -10,9 +10,6 @@
 #include <linux/version.h>
 #include "sched_assist_common.h"
 
-#define CREATE_TRACE_POINTS
-#include "sched_assist_trace.h"
-
 struct task_struct* get_futex_owner_by_pid(u32 owner_tid)
 {
 	struct task_struct* futex_owner = NULL;

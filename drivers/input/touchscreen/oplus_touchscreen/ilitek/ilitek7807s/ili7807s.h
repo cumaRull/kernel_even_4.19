@@ -101,7 +101,7 @@
 #include "../../touchpanel_healthinfo.h"
 #include <soc/oplus/system/oplus_project.h>
 
-#define DRIVER_VERSION                  "3.0.4.0.210906"
+#define DRIVER_VERSION                  "3.0.4.0.221208"
 
 /* Options */
 #define SPI_CLK                         9      /* follow by clk list */
@@ -411,7 +411,7 @@ struct report_info_block {
 #define CORE_VER_1460                           0x01040600
 #define CORE_VER_1470                           0x01040700
 
-#define MAX_HEX_FILE_SIZE                       (160*K)
+#define MAX_HEX_FILE_SIZE                       (256*K)
 #define ILI_FILE_HEADER                         256
 #define DLM_START_ADDRESS                       0x20610
 #define DLM_HEX_ADDRESS                         0x10000
@@ -692,6 +692,7 @@ struct ilitek_ts_data {
     bool pll_clk_wakeup;
 	bool position_high_resolution;
 	bool eng_flow;
+	bool shutdown_support;
 
     atomic_t irq_stat;
     atomic_t tp_reset;

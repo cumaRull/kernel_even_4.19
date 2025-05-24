@@ -65,14 +65,14 @@
 
 
 #define FTS_TEST_SAVE_INFO(fmt, args...) do { \
-    if (fts_data->s) { \
-        seq_printf(fts_data->s, fmt, ##args); \
+	if (fts3518_data->s) { \
+        seq_printf(fts3518_data->s, fmt, ##args); \
     } \
 } while (0)
 
 #define FTS_TEST_SAVE_ERR(fmt, args...)  do { \
-    if (fts_data->s) { \
-        seq_printf(fts_data->s, fmt, ##args); \
+	if (fts3518_data->s) { \
+        seq_printf(fts3518_data->s, fmt, ##args); \
     } \
     TPD_INFO(fmt, ##args); \
 } while (0)
@@ -107,7 +107,7 @@ static void sys_delay(int ms)
     msleep(ms);
 }
 
-int focal_abs(int value)
+int focal3518_abs(int value)
 {
     if (value < 0)
         value = 0 - value;
@@ -115,7 +115,7 @@ int focal_abs(int value)
     return value;
 }
 
-void print_buffer(int *buffer, int length, int line_num)
+void fts3518_print_buffer(int *buffer, int length, int line_num)
 {
     int i = 0;
     int j = 0;
@@ -171,7 +171,7 @@ static int fts_test_bus_read(u8 *cmd, int cmdlen, u8 *data, int datalen)
     }
     memcpy(write_buf, cmd, cmdlen);
 
-    ret = touch_i2c_read(fts_data->client, (char *)write_buf, cmdlen, (char *)read_buf, datalen);
+	ret = touch_i2c_read(fts3518_data->client, (char *)write_buf, cmdlen, (char *)read_buf, datalen);
     memcpy(data, read_buf, datalen);
 
     kfree(write_buf);
@@ -188,7 +188,7 @@ static int fts_test_bus_write(u8 *writebuf, int writelen)
 {
     int ret = 0;
 
-    ret = touch_i2c_write_block(fts_data->client, writebuf[0], writelen - 1, &writebuf[1]);
+	ret = touch_i2c_write_block(fts3518_data->client, writebuf[0], writelen - 1, &writebuf[1]);
     if (ret < 0)
         return ret;
     else
@@ -199,7 +199,7 @@ static int fts_test_read_reg(u8 addr, u8 *val)
 {
     int ret = 0;
 
-    ret = touch_i2c_read_block(fts_data->client, addr, 1, val);
+	ret = touch_i2c_read_block(fts3518_data->client, addr, 1, val);
     if (ret < 0)
         return ret;
     else
@@ -480,13 +480,9 @@ static int enter_factory_mode(struct fts_ts_data *ts_data)
         sys_delay(50);
     }
 
-    if (i >= ENTER_WORK_FACTORY_RETRIES) {
         FTS_TEST_SAVE_ERR("Enter factory mode fail\n");
         return -EIO;
-    }
 
-    fts_special_operation_for_samsung(ts_data);
-    return 0;
 }
 
 static int get_channel_num(struct fts_ts_data *ts_data)
@@ -2770,35 +2766,35 @@ static void fts_print_threshold(struct fts_ts_data *ts_data)
     int channel_num = tx_num + rx_num;
 
     TPD_INFO("noise threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_noise_data_P, node_num, rx_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_noise_data_N, node_num, rx_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_noise_data_P, node_num, rx_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_noise_data_N, node_num, rx_num);
 
     TPD_INFO("rawdata threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_raw_data_P, node_num, rx_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_raw_data_N, node_num, rx_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_raw_data_P, node_num, rx_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_raw_data_N, node_num, rx_num);
 
     TPD_INFO("uniformity threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_uniformity_data_P, node_num, rx_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_uniformity_data_N, node_num, rx_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_uniformity_data_P, node_num, rx_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_uniformity_data_N, node_num, rx_num);
 
     TPD_INFO("scap cb normal threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_P, channel_num, channel_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_N, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_P, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_N, channel_num, channel_num);
 
     TPD_INFO("scap cb waterproof threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_waterproof_P, channel_num, channel_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_waterproof_N, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_waterproof_P, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_cb_data_waterproof_N, channel_num, channel_num);
 
     TPD_INFO("scap rawdata threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_data_P, channel_num, channel_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_data_N, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_data_P, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_data_N, channel_num, channel_num);
 
     TPD_INFO("scap rawdata waterproof threshold max/min:");
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_waterproof_data_P, channel_num, channel_num);
-    print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_waterproof_data_N, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_waterproof_data_P, channel_num, channel_num);
+	fts3518_print_buffer(ts_data->fts_autotest_offset->fts_scap_raw_waterproof_data_N, channel_num, channel_num);
 }
 
-int fts_test_entry(struct fts_ts_data *ts_data)
+int fts3518_test_entry(struct fts_ts_data *ts_data)
 {
     int ret = 0;
     const struct firmware *limit_fw = NULL;

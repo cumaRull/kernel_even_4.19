@@ -2230,8 +2230,8 @@ static int syna_tcm_set_gesture_mode(struct syna_tcm_data *tcm_info, bool enable
     int retval = 0;
 	int state = tcm_info->gesture_state;
 	int config = 0xFFFF;
-    /*this command may take too much time, if needed can add flag to skip this */
-    TPD_INFO("%s: enable(%d)\n", __func__, enable);
+	/*this command may take too much time, if needed can add flag to skip this */
+	TPD_INFO("%s: enable(%d) state(%d)\n", __func__, enable, state);
 
 	if (tcm_info->black_gesture_indep) {
 		if (enable) {
@@ -3287,72 +3287,74 @@ static int syna_get_gesture_info(void *chip_data, struct gesture_info *gesture)
     struct touch_data *touch_data = &touch_hcd->touch_data;
 
     gesture->clockwise = 2;
-    switch (touch_data->lpwg_gesture) {
-    case DTAP_DETECT:
-        gesture->gesture_type = DouTap;
-        break;
-    case CIRCLE_DETECT:
-        gesture->gesture_type = Circle;
-        if (touch_data->extra_gesture_info[2] == 0x10)
-            gesture->clockwise = 1;
-        else if (touch_data->extra_gesture_info[2] == 0x20)
-            gesture->clockwise = 0;
-        break;
-    case SWIPE_DETECT:
-        if (touch_data->extra_gesture_info[4] == 0x41) {//x+
-            gesture->gesture_type = Left2RightSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x42) {//x-
-            gesture->gesture_type = Right2LeftSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x44) {//y+
-            gesture->gesture_type = Up2DownSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x48) {//y-
-            gesture->gesture_type = Down2UpSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x81) {//2x-
-            gesture->gesture_type = DouSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x82) {//2x+
-            gesture->gesture_type = DouSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x84) {//2y+
-            gesture->gesture_type = DouSwip;
-        } else if (touch_data->extra_gesture_info[4] == 0x88) {//2y-
-            gesture->gesture_type = DouSwip;
-        }
-        break;
-    case M_UNICODE:
-        gesture->gesture_type = Mgestrue;
-        break;
-    case W_UNICODE:
-        gesture->gesture_type = Wgestrue;
-        break;
-    case VEE_DETECT:
-        if (touch_data->extra_gesture_info[2] == 0x02) {//up
-            gesture->gesture_type = UpVee;
-        } else if (touch_data->extra_gesture_info[2] == 0x01) {//down
-            gesture->gesture_type = DownVee;
-        } else if (touch_data->extra_gesture_info[2] == 0x08) {//left
-            gesture->gesture_type = LeftVee;
-        } else if (touch_data->extra_gesture_info[2] == 0x04) {//right
-            gesture->gesture_type = RightVee;
-        }
-        break;
-    case TOUCH_HOLD_DOWN:
-        gesture->gesture_type = FingerprintDown;
-        break;
-    case TOUCH_HOLD_UP:
-        gesture->gesture_type = FingerprintUp;
-        break;
-    case HEART_DETECT:
-        gesture->gesture_type = Heart;
-        if (touch_data->extra_gesture_info[2] == 0x10) {
-                gesture->clockwise = 1;
-        } else if (touch_data->extra_gesture_info[2] == 0x20) {
-                gesture->clockwise = 0;
-        }
-        break;
-
-    case TRIANGLE_DETECT:
-    default:
-        TPD_DEBUG("not support\n");
-        break;
+	switch (touch_data->lpwg_gesture) {
+	case DTAP_DETECT:
+		gesture->gesture_type = DouTap;
+		break;
+	case CIRCLE_DETECT:
+		gesture->gesture_type = Circle;
+		if (touch_data->extra_gesture_info[2] == 0x10)
+			gesture->clockwise = 1;
+		else if (touch_data->extra_gesture_info[2] == 0x20)
+			gesture->clockwise = 0;
+		break;
+	case SWIPE_DETECT:
+		if (touch_data->extra_gesture_info[4] == 0x41) {/*x+*/
+			gesture->gesture_type = Left2RightSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x42) {/*x-*/
+			gesture->gesture_type = Right2LeftSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x44) {/*y+*/
+			gesture->gesture_type = Up2DownSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x48) {/*y-*/
+			gesture->gesture_type = Down2UpSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x81) {/*2x-*/
+			gesture->gesture_type = DouSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x82) {/*2x+*/
+			gesture->gesture_type = DouSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x84) {/*2y+*/
+			gesture->gesture_type = DouSwip;
+		} else if (touch_data->extra_gesture_info[4] == 0x88) {/*2y-*/
+			gesture->gesture_type = DouSwip;
+		}
+		break;
+	case M_UNICODE:
+		gesture->gesture_type = Mgestrue;
+		break;
+	case W_UNICODE:
+		gesture->gesture_type = Wgestrue;
+		break;
+	case VEE_DETECT:
+		if (touch_data->extra_gesture_info[2] == 0x02) {/*up*/
+			gesture->gesture_type = UpVee;
+		} else if (touch_data->extra_gesture_info[2] == 0x01) {/*down*/
+			gesture->gesture_type = DownVee;
+		} else if (touch_data->extra_gesture_info[2] == 0x08) {/*left*/
+			gesture->gesture_type = LeftVee;
+		} else if (touch_data->extra_gesture_info[2] == 0x04) {/*right*/
+			gesture->gesture_type = RightVee;
+		}
+		break;
+	case TOUCH_HOLD_DOWN:
+		gesture->gesture_type = FingerprintDown;
+		break;
+	case TOUCH_HOLD_UP:
+		gesture->gesture_type = FingerprintUp;
+		break;
+	case HEART_DETECT:
+		gesture->gesture_type = Heart;
+		if (touch_data->extra_gesture_info[2] == 0x10) {
+				gesture->clockwise = 1;
+		} else if (touch_data->extra_gesture_info[2] == 0x20) {
+				gesture->clockwise = 0;
+		}
+		break;
+	case STAP_DETECT:
+		gesture->gesture_type = SingleTap;
+		break;
+	case TRIANGLE_DETECT:
+	default:
+		TPD_DEBUG("not support\n");
+		break;
     }
     if (gesture->gesture_type != UnkownGesture) {
         gesture->Point_start.x = (touch_data->data_point[0] | (touch_data->data_point[1] << 8));
@@ -3368,6 +3370,11 @@ static int syna_get_gesture_info(void *chip_data, struct gesture_info *gesture)
         gesture->Point_4th.x    = (touch_data->data_point[20] | (touch_data->data_point[21] << 8));
         gesture->Point_4th.y    = (touch_data->data_point[22] | (touch_data->data_point[23] << 8));
     }
+
+	if (gesture->gesture_type == SingleTap || gesture->gesture_type == DouTap) {
+		gesture->Point_start.x = (touch_data->extra_gesture_info[0] | (touch_data->extra_gesture_info[1] << 8));
+		gesture->Point_start.y = (touch_data->extra_gesture_info[2] | (touch_data->extra_gesture_info[3] << 8));
+	}
 
     TPD_INFO("lpwg:0x%x, type:%d, clockwise: %d, points: (%d, %d)(%d, %d)(%d, %d)(%d, %d)(%d, %d)(%d, %d)\n",
         touch_data->lpwg_gesture, gesture->gesture_type, gesture->clockwise,\
@@ -4426,7 +4433,7 @@ static void syna_auto_test(struct seq_file *s, void *chip_data, struct syna_test
 		error_count++;
 	}
 
-    seq_printf(s, "imageid = 0x%x customID 0x%s\n", syna_testdata->TP_FW, tcm_info->app_info.customer_config_id);
+	seq_printf(s, "imageid = 0x%llu customID 0x%s\n", syna_testdata->TP_FW, tcm_info->app_info.customer_config_id);
     seq_printf(s, "%d error(s). %s\n", error_count, error_count ? "" : "All test passed.");
 
 	tp_healthinfo_report(tcm_info->monitor_data_v2, HEALTH_TEST_AUTO, &error_count);

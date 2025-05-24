@@ -20,6 +20,53 @@ int sysctl_slide_boost_enabled = 0;
 int sysctl_boost_task_threshold = 51;
 int sysctl_frame_rate = 60;
 
+
+enum ibpt_type {
+	/* input boost per-cpu trace util */
+	IBPT_UTIL = 0,
+	IBPT_LOAD = 1,
+	/* new trace type should before it */
+	IBPT_GUARD,
+};
+
+struct input_boost_percpu_trace {
+	int prev_val[IBPT_GUARD];
+};
+
+static DEFINE_PER_CPU(struct input_boost_percpu_trace, ibpt);
+static int ibt_scene_prev_val;
+
+static noinline int tracing_mark_write(const char *buf)
+{
+	trace_printk(buf);
+	return 0;
+}
+
+static void ib_per_cpu_systrace_c(enum ibpt_type index, int cpu, const char *str, int val)
+{
+	if (unlikely(global_debug_enabled & DEBUG_SYSTRACE)) {
+		if (per_cpu(ibpt, cpu).prev_val[index] != val) {
+			char buf[256];
+			snprintf(buf, sizeof(buf), "C|10000|cpu%d_%s|%d\n", cpu, str, val);
+			tracing_mark_write(buf);
+			per_cpu(ibpt, cpu).prev_val[index] = val;
+		}
+	}
+}
+
+static void ib_systrace_c(const char *str, int val)
+{
+	if (unlikely(global_debug_enabled & DEBUG_SYSTRACE)) {
+		if (ibt_scene_prev_val != val) {
+			char buf[256];
+			snprintf(buf, sizeof(buf), "C|10000|%s|%d\n", str, val);
+			tracing_mark_write(buf);
+			ibt_scene_prev_val = val;
+		}
+	}
+}
+
+
 void sched_assist_adjust_slide_param(unsigned int *maxtime) {
 /* Give each scene with default boost value */
 	if (sched_assist_scene(SA_SLIDE)) {
@@ -41,7 +88,7 @@ void sched_assist_adjust_slide_param(unsigned int *maxtime) {
 
 static u64 calc_freq_ux_load(struct task_struct *p, u64 wallclock)
 {
-	unsigned int maxtime = 0, factor = 0;
+	unsigned int maxtime = 5, factor = 0;
 #ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
 	unsigned int window_size = sched_ravg_window / NSEC_PER_MSEC;
 #else
@@ -76,6 +123,23 @@ static u64 calc_freq_ux_load(struct task_struct *p, u64 wallclock)
 	return max(freq_exec_load, freq_ravg_load);
 }
 
+bool slide_boost_scene(void)
+{
+	return sysctl_slide_boost_enabled || sysctl_input_boost_enabled
+		|| sched_assist_scene(SA_ANIM) || sched_assist_scene(SA_GPU_COMPOSITION);
+}
+
+bool slide_rt_boost(struct task_struct *p)
+{
+#ifdef CONFIG_OPLUS_UX_IM_FLAG
+	if (p->ux_im_flag == IM_FLAG_SURFACEFLINGER || p->ux_im_flag == IM_FLAG_RENDERENGINE) {
+			if (slide_boost_scene())
+				return true;
+	}
+#endif
+	return false;
+}
+
 void _slide_find_start_cpu(struct root_domain *rd, struct task_struct *p, int *start_cpu)
 {
 #ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
@@ -93,6 +157,7 @@ void _slide_find_start_cpu(struct root_domain *rd, struct task_struct *p, int *s
 	}
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
 u64 _slide_get_boost_load(int cpu) {
 	u64 timeline = 0;
 #ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
@@ -114,6 +179,21 @@ u64 _slide_get_boost_load(int cpu) {
 		return 0;
 	}
 }
+
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) */
+
+u64 _slide_get_boost_load(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+
+	if (rq->curr && (is_heavy_ux_task(rq->curr) || rq->curr->sched_class == &rt_sched_class)) {
+		return ux_task_load[cpu];
+	} else {
+		return 0;
+	}
+}
+
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) */
 
 #if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_SCHED_WALT)
 #ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
@@ -144,23 +224,37 @@ void adjust_sched_assist_input_ctrl() {
 	}
 }
 
-void slide_calc_boost_load(struct rq *rq, unsigned int *flag, int cpu) {
+void slide_calc_boost_load(struct rq *rq, unsigned int *flag, int cpu)
+{
+	int is_slide, is_input, is_launcher_si, is_anim, sence_mask;
+	bool is_target_case = false;
 #ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
 	u64 wallclock = sched_ktime_clock();
 #else
 	u64 wallclock = walt_ktime_clock();
 #endif
+	is_slide = !!sched_assist_scene(SA_SLIDE);
+	is_input = !!sched_assist_scene(SA_INPUT);
+	is_launcher_si = !!sched_assist_scene(SA_LAUNCHER_SI);
+	is_anim = !!sched_assist_scene(SA_ANIM);
+
 	adjust_sched_assist_input_ctrl();
-	if (sched_assist_scene(SA_SLIDE) || sched_assist_scene(SA_LAUNCHER_SI) || sched_assist_scene(SA_INPUT)) {
-		if(rq->curr && (is_heavy_ux_task(rq->curr) || rq->curr->sched_class == &rt_sched_class) && !oplus_task_misfit(rq->curr, rq->cpu)) {
+
+	if (is_slide || is_input || is_launcher_si || is_anim) {
+		if(rq->curr && (is_heavy_ux_task(rq->curr) || rq->curr->sched_class == &rt_sched_class)) {
 			ux_task_load[cpu] = calc_freq_ux_load(rq->curr, wallclock);
 			ux_load_ts[cpu] = wallclock;
 			*flag |= (SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_BOOST);
-		} else if (ux_task_load[cpu] && !test_task_ux(rq->curr)) {
-			ux_task_load[cpu] = 0;
-			*flag |= (SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_BOOST);
+			is_target_case = true;
 		}
 	}
+	if (!is_target_case && ux_task_load[cpu]) {
+		ux_task_load[cpu] = 0;
+		*flag |= (SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_BOOST);
+	}
+
+	sence_mask = is_input << 0 | is_slide << 1 | is_launcher_si << 2 | is_anim << 3;
+	ib_systrace_c("ibt_boost_scene", sence_mask);
 }
 
 bool should_adjust_slide_task_placement(struct task_struct *p, int cpu)
@@ -236,4 +330,31 @@ void oplus_get_cpu_util_mtk(int cpu, u64 *walt_cpu_util, int *boosted)
 		return;
 	}
 }
+
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) */
+
+void oplus_get_cpu_util_mtk(int cpu, int *util)
+{
+	u64 boost_load = 0;
+	u64 orig_util = *util;
+
+	boost_load = _slide_get_boost_load(cpu);
+	/* scale runnable+running time(ns) to util */
+	boost_load <<= SCHED_CAPACITY_SHIFT;
+#ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
+	do_div(boost_load, sched_ravg_window);
+#else
+	do_div(boost_load, walt_ravg_window);
 #endif
+	*util = max_t(u64, boost_load, orig_util);
+
+	ib_per_cpu_systrace_c(IBPT_LOAD, cpu, "boost_load", boost_load);
+	/* util has too much trace，here only for compare, make util fellow no-zero boost_load */
+	if (boost_load != 0) {
+		ib_per_cpu_systrace_c(IBPT_UTIL, cpu, "util", orig_util);
+	} else {
+		ib_per_cpu_systrace_c(IBPT_UTIL, cpu, "util", 0);
+	}
+}
+
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) */

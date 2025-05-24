@@ -6951,7 +6951,8 @@ static int init_parse_dts(struct device *dev, struct touchpanel_data *ts)
 	ts->disable_suspend_irq_handler = of_property_read_bool(np, "disable_suspend_irq_handler_support");
 
     //set incell panel parameter, for of_property_read_bool return 1 when success and return 0 when item is not exist
-    rc = ts->is_incell_panel = of_property_read_bool(np, "incell_screen");
+	ts->is_incell_panel = of_property_read_bool(np, "incell_screen");
+	rc = ts->is_incell_panel;
     if(rc > 0) {
         TPD_INFO("panel is incell!\n");
         ts->is_incell_panel = 1;

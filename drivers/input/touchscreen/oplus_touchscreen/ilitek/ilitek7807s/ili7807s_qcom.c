@@ -2851,7 +2851,7 @@ static fw_update_state ilitek_fw_update(void *chip_data,
 
     if (ret < 0) {
         ILI_ERR("Failed to upgrade firmware, ret = %d\n", ret);
-        return ret;
+        return FW_UPDATE_ERROR;
     }
 
     return FW_UPDATE_SUCCESS;
@@ -3026,6 +3026,9 @@ static int ilitek_read_debug_data(struct seq_file *s,
                                   u8 read_type)
 {
     int ret;
+    u8	checksum = 0, pack_checksum = 0;
+    int tmp = ili7807s_debug_en, retry = 3;
+    int time_out = 0, data_time_out = 50;
     u8 test_cmd[4] = { 0 };
     int i = 0;
     int j = 0;
@@ -3040,47 +3043,79 @@ static int ilitek_read_debug_data(struct seq_file *s,
     }
 
     mutex_lock(&ilits7807s->touch_mutex);
-    ret = ili7807s_set_tp_data_len(DATA_FORMAT_DEBUG, false, NULL);
+    do {
+        ret = ili7807s_set_tp_data_len(DATA_FORMAT_DEBUG, false, NULL);
 
-    if (ret < 0) {
-        ILI_ERR("Failed to switch debug mode\n");
-        seq_printf(s, "get data failed\n");
-        mutex_unlock(&ilits7807s->touch_mutex);
-        ili_kfree((void **)&buf);
-        return -1;
-    }
-
-    test_cmd[0] = 0xFA;
-    test_cmd[1] = read_type;
-    ILI_INFO("debug cmd 0x%X, 0x%X", test_cmd[0], test_cmd[1]);
-    ret = ilits7807s->wrapper(test_cmd, 2, NULL, 0, ON, OFF);
-    atomic_set(&ilits7807s->cmd_int_check, ENABLE);
-    enable_irq(ilits7807s->irq_num);//because oplus disable
-
-    for (i = 0; i < 10; i++) {
-        int rlen = 0;
-        ret = ilits7807s->detect_int_stat(false);
-        rlen = ilits7807s->tp_data_len;
-        ILI_INFO("Packget length = %d\n", rlen);
-        ret = ilits7807s->wrapper(NULL, 0, buf, rlen, OFF, OFF);
-
-        if (ret < 0 || rlen < 0 || rlen >= TR_BUF_SIZE) {
-            ILI_ERR("Length of packet is invaild\n");
-            continue;
+        if (ret < 0) {
+            ILI_ERR("Failed to switch debug mode\n");
+            seq_printf(s, "get data failed\n");
+            mutex_unlock(&ilits7807s->touch_mutex);
+            ili_kfree((void **)&buf);
+            return -1;
         }
 
-		if (ilits7807s->position_high_resolution == OFF) {
-	        if (buf[0] == P5_X_DEBUG_PACKET_ID) {
-	            break;
-	        }
-		} else {
-	        if (buf[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID) {
-	            break;
-	        }
-		}
+        test_cmd[0] = 0xFA;
+        test_cmd[1] = read_type;
+        ILI_INFO("debug cmd 0x%X, 0x%X", test_cmd[0], test_cmd[1]);
+        ret = ilits7807s->wrapper(test_cmd, 2, NULL, 0, ON, OFF);
+        atomic_set(&ilits7807s->cmd_int_check, ENABLE);
+        enable_irq(ilits7807s->irq_num);//because oplus disable
+        time_out = ilits7807s->wait_int_timeout;
+        ilits7807s->wait_int_timeout = data_time_out;
 
+        for (i = 0; i < 3; i++) {
+            int rlen = 0;
+            atomic_set(&ilits7807s->cmd_int_check, ENABLE);
+            ret = ilits7807s->detect_int_stat(false);
+            rlen = ilits7807s->tp_data_len;
+            ILI_INFO("Packget length = %d\n", rlen);
+            ret = ilits7807s->wrapper(NULL, 0, buf, rlen, OFF, OFF);
+
+            if (ret < 0 || rlen < 0 || rlen >= TR_BUF_SIZE) {
+                ILI_ERR("Length of packet is invaild\n");
+                continue;
+            }
+
+            checksum = ili7807s_calc_packet_checksum(buf, rlen - 1);
+            pack_checksum = buf[rlen - 1];
+            ILI_INFO("Packet ID = %x\n", buf[0]);
+
+            if (checksum != pack_checksum) {
+                ILI_ERR("Checksum Error (0x%X)! Pack = 0x%X, len = %d\n", checksum, pack_checksum, rlen);
+                ili7807s_debug_en = DEBUG_ALL;
+                ili7807s_dump_data(buf, 8, rlen, 0, "debug data with wrong");
+                ili7807s_debug_en = tmp;
+                continue;
+            }
+
+            if (ilits7807s->position_high_resolution == OFF) {
+                if (buf[0] == P5_X_DEBUG_PACKET_ID) {
+                    break;
+                }
+            } else {
+                if (buf[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID) {
+                    break;
+                }
+            }
+        }
+
+        ilits7807s->wait_int_timeout = time_out;
+        if (ilits7807s->position_high_resolution == OFF)
+        {
+            if (buf[0] == P5_X_DEBUG_PACKET_ID && checksum == pack_checksum) {
+                break;
+            }
+        } else {
+            if (buf[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID && checksum == pack_checksum) {
+                break;
+            }
+        }
         atomic_set(&ilits7807s->cmd_int_check, DISABLE);
-    }
+        disable_irq_nosync(ilits7807s->irq_num);
+        mdelay(10);
+
+    }while (--retry > 0);
+    atomic_set(&ilits7807s->cmd_int_check, DISABLE);
 
     disable_irq_nosync(ilits7807s->irq_num);
 
@@ -3098,7 +3133,7 @@ static int ilitek_read_debug_data(struct seq_file *s,
             break;
     }
 
-    if (i < 10) {
+    if (i < 3) {
 		if (ilits7807s->position_high_resolution == OFF) {
 			offset_len = 35;
 		} else {
@@ -3256,6 +3291,9 @@ static int ilitek_read_delta_snr_data(struct seq_file *s,
                                   u8 read_type, int index)
 {
     int ret;
+    u8	checksum = 0, pack_checksum = 0;
+    int tmp = ili7807s_debug_en, retry = 3;
+    int time_out = 0, data_time_out = 50;
     u8 test_cmd[4] = { 0 };
     int i = 0;
     int xch = ilits7807s->xch_num;
@@ -3273,47 +3311,76 @@ static int ilitek_read_delta_snr_data(struct seq_file *s,
     }
 
     mutex_lock(&ilits7807s->touch_mutex);
-    ret = ili7807s_set_tp_data_len(DATA_FORMAT_DEBUG, false, NULL);
-    if (ret < 0) {
-        ILI_ERR("Failed to switch debug mode\n");
-        seq_printf(s, "get data failed\n");
-        mutex_unlock(&ilits7807s->touch_mutex);
-        ili_kfree((void **)&buf);
-        return -1;
-    }
-
-    test_cmd[0] = 0xFA;
-    test_cmd[1] = read_type;
-    ILI_INFO("debug cmd 0x%X, 0x%X", test_cmd[0], test_cmd[1]);
-    ret = ilits7807s->wrapper(test_cmd, 2, NULL, 0, ON, OFF);
-    atomic_set(&ilits7807s->cmd_int_check, ENABLE);
-    enable_irq(ilits7807s->irq_num);
-
-    for (i = 0; i < 10; i++) {
-        int rlen = 0;
-        ret = ilits7807s->detect_int_stat(false);
-        rlen = ilits7807s->tp_data_len;
-        ILI_INFO("Packget length = %d\n", rlen);
-        ret = ilits7807s->wrapper(NULL, 0, buf, rlen, OFF, OFF);
-
-        if (ret < 0 || rlen < 0 || rlen >= TR_BUF_SIZE) {
-            ILI_ERR("Length of packet is invaild\n");
-            continue;
+    do {
+        ret = ili7807s_set_tp_data_len(DATA_FORMAT_DEBUG, false, NULL);
+        if (ret < 0) {
+            ILI_ERR("Failed to switch debug mode\n");
+            seq_printf(s, "get data failed\n");
+            mutex_unlock(&ilits7807s->touch_mutex);
+            ili_kfree((void **)&buf);
+            return -1;
         }
 
-        if (ilits7807s->position_high_resolution == OFF) {
-            if (buf[0] == P5_X_DEBUG_PACKET_ID) {
+        test_cmd[0] = 0xFA;
+        test_cmd[1] = read_type;
+        ILI_INFO("debug cmd 0x%X, 0x%X", test_cmd[0], test_cmd[1]);
+        ret = ilits7807s->wrapper(test_cmd, 2, NULL, 0, ON, OFF);
+        atomic_set(&ilits7807s->cmd_int_check, ENABLE);
+        enable_irq(ilits7807s->irq_num);
+        time_out = ilits7807s->wait_int_timeout;
+        ilits7807s->wait_int_timeout = data_time_out;
+
+        for (i = 0; i < 3; i++) {
+            int rlen = 0;
+            atomic_set(&ilits7807s->cmd_int_check, ENABLE);
+            ret = ilits7807s->detect_int_stat(false);
+            rlen = ilits7807s->tp_data_len;
+            ILI_INFO("Packget length = %d\n", rlen);
+            ret = ilits7807s->wrapper(NULL, 0, buf, rlen, OFF, OFF);
+
+            if (ret < 0 || rlen < 0 || rlen >= TR_BUF_SIZE) {
+                ILI_ERR("Length of packet is invaild\n");
+                continue;
+            }
+            checksum = ili7807s_calc_packet_checksum(buf, rlen - 1);
+            pack_checksum = buf[rlen - 1];
+            ILI_INFO("Packet ID = %x\n", buf[0]);
+
+            if (checksum != pack_checksum) {
+                ILI_ERR("Checksum Error (0x%X)! Pack = 0x%X, len = %d\n", checksum, pack_checksum, rlen);
+                ili7807s_debug_en = DEBUG_ALL;
+                ili7807s_dump_data(buf, 8, rlen, 0, "debug data with wrong");
+                ili7807s_debug_en = tmp;
+                continue;
+            }
+
+            if (ilits7807s->position_high_resolution == OFF) {
+                if (buf[0] == P5_X_DEBUG_PACKET_ID) {
+                    break;
+                }
+            } else {
+                if (buf[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID) {
+                    break;
+                }
+            }
+        }
+        ilits7807s->wait_int_timeout = time_out;
+        if (ilits7807s->position_high_resolution == OFF)
+        {
+            if (buf[0] == P5_X_DEBUG_PACKET_ID && checksum == pack_checksum) {
                 break;
             }
         } else {
-            if (buf[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID) {
+            if (buf[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID && checksum == pack_checksum) {
                 break;
             }
         }
-
         atomic_set(&ilits7807s->cmd_int_check, DISABLE);
-    }
+        disable_irq_nosync(ilits7807s->irq_num);
+        mdelay(10);
 
+    }while (--retry > 0);
+    atomic_set(&ilits7807s->cmd_int_check, DISABLE);
     disable_irq_nosync(ilits7807s->irq_num);
 
     switch (read_type) {
@@ -3965,6 +4032,7 @@ int __maybe_unused ilitek7807s_spi_probe(struct spi_device *spi)
     ilits7807s->tp_int = ts->hw_res.irq_gpio;
     ilits7807s->tp_rst = ts->hw_res.reset_gpio;
     ilits7807s->irq_num = ts->irq;
+    ilits7807s->shutdown_support = ts->shutdown_support;
 
     ILI_INFO("platform probe tp_int = %d tp_rst = %d irq_num = %d\n", ilits7807s->tp_int, ilits7807s->tp_rst,
              ilits7807s->irq_num);
@@ -4108,6 +4176,17 @@ static struct of_device_id tp_match_table[] = {
     { },
 };
 
+static void  ilitek7807s_spi_shutdown(struct spi_device *spi)
+{
+    if(ilits7807s->shutdown_support){
+        ILI_INFO("ilitek set RST pin down and disable irq");
+        ili7807s_irq_disable();
+        if(ilits7807s->tp_rst){
+            gpio_set_value(ilits7807s->tp_rst, 0);
+        }
+    }
+}
+
 static struct spi_driver tp_spi_driver = {
     .probe = ilitek7807s_spi_probe,
     .remove = ilitek7807s_spi_remove,
@@ -4117,6 +4196,7 @@ static struct spi_driver tp_spi_driver = {
         .of_match_table = tp_match_table,
         .pm = &tp_pm_ops,
     },
+    .shutdown = ilitek7807s_spi_shutdown,
 };
 
 static int32_t __init  tp_driver_init_ili_7807s(void)

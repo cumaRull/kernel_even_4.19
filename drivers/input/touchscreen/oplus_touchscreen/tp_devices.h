@@ -30,6 +30,7 @@ typedef enum tp_dev{
     TP_INX,
     TP_LS,
     TP_TXD,
+    TP_VXN,
     TP_UNKNOWN,
 }tp_dev;
 

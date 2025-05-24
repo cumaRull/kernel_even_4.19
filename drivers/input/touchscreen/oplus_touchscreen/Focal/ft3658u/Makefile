@@ -4,5 +4,7 @@
 
 # Each configuration option enables a list of files.
 
-obj-$(CONFIG_TOUCHPANEL_FOCAL_FT3658U) += focal_drivers_ft3658u.o
-obj-$(CONFIG_TOUCHPANEL_FOCAL_FT3658U) += focal_test_ft3658u.o
+
+oplus_bsp_tp_ft3658u-y += ft3658u_driver.o
+oplus_bsp_tp_ft3658u-y += ft3658u_test.o
+obj-$(CONFIG_TOUCHPANEL_FOCAL_FT3658U) += oplus_bsp_tp_ft3658u.o

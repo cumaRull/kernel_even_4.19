@@ -28,6 +28,7 @@ config OPLUS_TP_APK
 	help
 	  Say Y here if you use apk for TP.
 
+
 config TOUCHPANEL_MULTI_NOFLASH
 	bool "Multiple noflash TPs using"
 	help
@@ -109,3 +110,4 @@ endif
 if TOUCHPANEL_ILITEK
 source "drivers/input/touchscreen/oplus_touchscreen/ilitek/Kconfig"
 endif
+

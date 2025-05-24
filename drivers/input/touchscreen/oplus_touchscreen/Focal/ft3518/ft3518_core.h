@@ -210,6 +210,7 @@ struct fts_ts_data {
     int csv_fd;
     int irq_num;
     int probe_done;
+	int reset_pinctrl;
     int *noise_rawdata;
     int *rawdata;
     int *scap_cb;
@@ -237,12 +238,11 @@ struct fts_ts_data {
     bool black_gesture_indep;
     bool high_resolution_support;
 	bool high_resolution_support_x8;
-	bool need_pinctrl_pull_up_reset;
 };
 
 
-extern struct fts_ts_data *fts_data;
+extern struct fts_ts_data *fts3518_data;
 
-int fts_test_entry(struct fts_ts_data *ts_data);
+int fts3518_test_entry(struct fts_ts_data *ts_data);
 int fts_rstpin_reset(void *chip_data);
 #endif /*__FT3518_CORE_H__*/

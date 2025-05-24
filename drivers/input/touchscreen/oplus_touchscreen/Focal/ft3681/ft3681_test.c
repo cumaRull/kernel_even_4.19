@@ -316,6 +316,23 @@ static int ft3681_test_write(u8 addr, u8 *writebuf, int writelen)
 	kfree(data);
 	return 0;
 }
+
+static int fts_test_spi_write_direct(u8 *writebuf, u32 writelen)
+{
+	int ret = 0;
+	 ret = ft3681_spi_write_direct(writebuf, writelen);
+
+	 return ret;
+}
+
+static int fts_test_spi_read_direct(u8 *writebuf, u32 writelen, u8 *readbuf, u32 readlen)
+{
+	int ret = 0;
+	ret = ft3681_spi_read_direct(writebuf, writelen, readbuf, readlen);
+
+	return ret;
+}
+
 /*
  * wait_state_update - wait fw status update
  */
@@ -946,7 +963,7 @@ static void ft3681_show_null_noise(int *null_noise, int rx_num)
 	/*show noise*/
 	TPD_INFO("null noise:%d", null_noise[0]);
 	for (i = 0; i < (rx_num * 3); i = i + 1) {
-		cnt += snprintf(tmpbuf + cnt, 512 - cnt, "%5d,", null_noise[i + 1]);
+		cnt += snprintf(tmpbuf + cnt, 512 - cnt, "%5d,", null_noise[i]);
 		if (((i + 1) % rx_num) == 0) {
 			cnt = 0;
 			TPD_INFO("%s", tmpbuf);
@@ -1653,18 +1670,18 @@ static int ft3681_scap_cb_autotest(struct chip_data_ft3681 *ts_data, bool *test_
 			goto restore_reg;
 		}
 
-		ret = ft3681_test_read_reg(FACTROY_REG_SCAP_GCB_RX, (u8 *)&ts_data->scap_gcb_rx);
+		ret = ft3681_test_read_reg(FACTROY_REG_SCAP_GCB_RX, (u8 *)&ts_data->scap_gcb_rx_wateron);
 		if (ret) {
 			FTS_TEST_SAVE_ERR("read GCB_RX fail,ret=%d\n", ret);
 			goto restore_reg;
 		}
 
-		ret = ft3681_test_read_reg(FACTROY_REG_SCAP_GCB_TX, (u8 *)&ts_data->scap_gcb_tx);
+		ret = ft3681_test_read_reg(FACTROY_REG_SCAP_GCB_TX, (u8 *)&ts_data->scap_gcb_tx_wateron);
 		if (ret) {
 			FTS_TEST_SAVE_ERR("read GCB_TX fail,ret=%d\n", ret);
 			goto restore_reg;
 		}
-		TPD_INFO("GCB:RX=%d,TX=%d", ts_data->scap_gcb_rx, ts_data->scap_gcb_tx);
+		TPD_INFO("GCB:RX=%d,TX=%d", ts_data->scap_gcb_rx_wateron, ts_data->scap_gcb_tx_wateron);
 
 		/* compare */
 		tx_check = get_fw_wp(wc_sel, WATER_PROOF_ON_TX);
@@ -1673,18 +1690,18 @@ static int ft3681_scap_cb_autotest(struct chip_data_ft3681 *ts_data, bool *test_
 					   ts_data->ft3681_autotest_offset->ft3681_scap_cb_data_waterproof_N,
 					   ts_data->ft3681_autotest_offset->ft3681_scap_cb_data_waterproof_P);
 
-		if (rx_check && ((ts_data->scap_gcb_rx < SCAP_CB_ON_GCB_MIN) ||
-		                 (ts_data->scap_gcb_rx > SCAP_CB_ON_GCB_MAX))) {
+		if (rx_check && ((ts_data->scap_gcb_rx_wateron < SCAP_CB_ON_GCB_MIN) ||
+		                 (ts_data->scap_gcb_rx_wateron > SCAP_CB_ON_GCB_MAX))) {
 			FTS_TEST_SAVE_ERR("test fail,gcb_rx:%5d,range=(%5d,%5d)\n",
-			                  ts_data->scap_gcb_rx, SCAP_CB_ON_GCB_MIN,
+			                  ts_data->scap_gcb_rx_wateron, SCAP_CB_ON_GCB_MIN,
 			                  SCAP_CB_ON_GCB_MAX);
 			tmp_result = false;
 		}
 
-		if (tx_check && ((ts_data->scap_gcb_tx < SCAP_CB_ON_GCB_MIN) ||
-		                 (ts_data->scap_gcb_tx > SCAP_CB_ON_GCB_MAX))) {
+		if (tx_check && ((ts_data->scap_gcb_tx_wateron < SCAP_CB_ON_GCB_MIN) ||
+		                 (ts_data->scap_gcb_tx_wateron > SCAP_CB_ON_GCB_MAX))) {
 			FTS_TEST_SAVE_ERR("test fail,gcb_tx:%5d,range=(%5d,%5d)\n",
-			                  ts_data->scap_gcb_tx, SCAP_CB_ON_GCB_MIN,
+			                  ts_data->scap_gcb_tx_wateron, SCAP_CB_ON_GCB_MIN,
 			                  SCAP_CB_ON_GCB_MAX);
 			tmp_result = false;
 		}
@@ -2167,6 +2184,324 @@ test_err:
 
 }
 
+int ft3681_membist_test(void *chip_data, bool *test_result)
+{
+	int ret = 0;
+	bool tmp_soc_result = true;
+	bool tmp_afe_result = true;
+	u8 addr_value = 0;
+	u8 cmd_read_data[5] = {0};
+	u8 tmp_data = 0;
+	u8 i = 0;
+	struct chip_data_ft3681 *ts_data = (struct chip_data_ft3681 *)chip_data;
+	u32 spi_speed = ts_data->ft_spi->max_speed_hz;
+
+	FTS_TEST_FUNC_ENTER();
+	FTS_TEST_SAVE_INFO("\n============ Test Item: Mem Bist Test\n");
+
+	ft3681_set_spi_max_speed(2000000, 1);
+	ft3681_hw_reset(ts_data, 0);
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[0], 3);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("write 0x55 0xAA fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto test_err;
+	}
+	sys_delay(200);
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[1], 11);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("disable write protection fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+	sys_delay(50);
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[2], 11);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("enable clk fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[3], 11);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos set Burnin mode fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+	sys_delay(50);
+
+	for(i = 4;i < 23;i++) {
+		ret = fts_test_spi_write_direct(soc_membist_test_cmd[i], 11);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("sos set bist mode cmd[%d] fail ,ret=%d\n", i, ret);
+			tmp_soc_result = false;
+			goto soc_test_ng;
+		}
+	}
+	sys_delay(50);
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[23], 11);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos set bist mode cmd[23] fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[24], 11);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos set bist mode cmd[24] fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[25], 7);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos set bist mode cmd[25] fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+
+	addr_value = 0x71;
+	ret = fts_test_spi_read_direct(&addr_value, 1, cmd_read_data, 5);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos set bist mode read fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+	if ((cmd_read_data[1] == 0xFA) && (cmd_read_data[2] == 0x00) && (cmd_read_data[3] == 0x00) && (cmd_read_data[4] == 0x00)) {
+		FTS_TEST_SAVE_INFO("SOS Bist Mode Register success!!!\n");
+	} else {
+		tmp_soc_result = false;
+		FTS_TEST_SAVE_ERR("SOC membist NG!!!\n");
+		FTS_TEST_SAVE_ERR("sos read bist mode reg ,cmd_read_data=0x%02X 0x%02X 0x%02X 0x%02X\n",
+		cmd_read_data[1], cmd_read_data[2], cmd_read_data[3], cmd_read_data[4]);
+		goto soc_test_ng;
+	}
+	sys_delay(50);
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[26], 7);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos read bist finish CMD[26] fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+
+	addr_value = 0x71;
+	ret = fts_test_spi_read_direct(&addr_value, 1, cmd_read_data, 5);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos read bist finish fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+	if ((cmd_read_data[1] == 0x00) && (cmd_read_data[2] == 0x0F) && (cmd_read_data[3] == 0x00) && (cmd_read_data[4] == 0x00)) {
+		FTS_TEST_SAVE_INFO("Bist Finish success!!!\n");
+	} else {
+		tmp_soc_result = false;
+		FTS_TEST_SAVE_ERR("SOC membist NG!!!\n");
+
+		FTS_TEST_SAVE_ERR("sos read bist finish ,cmd_read_data=0x%02X 0x%02X 0x%02X 0x%02X\n",
+		cmd_read_data[1], cmd_read_data[2], cmd_read_data[3], cmd_read_data[4]);
+		goto soc_test_ng;
+	}
+	sys_delay(50);
+
+
+	ret = fts_test_spi_write_direct(soc_membist_test_cmd[27], 7);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos read bist finish fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+
+	addr_value = 0x71;
+	ret = fts_test_spi_read_direct(&addr_value, 1, cmd_read_data, 3);
+	if (ret < 0) {
+		FTS_TEST_SAVE_ERR("sos read bist finish fail ,ret=%d\n", ret);
+		tmp_soc_result = false;
+		goto soc_test_ng;
+	}
+	if((cmd_read_data[1] == 0x00) && (cmd_read_data[2] == 0x00)) {
+		FTS_TEST_SAVE_INFO("SOS Bist Result success!!!\n");
+	} else {
+		tmp_soc_result = false;
+		FTS_TEST_SAVE_ERR("SOC membist NG!!!\n");
+		FTS_TEST_SAVE_ERR("sos read bist finish ,cmd_read_data=0x%02X 0x%02X \n", cmd_read_data[1], cmd_read_data[2]);
+		goto soc_test_ng;
+	}
+	sys_delay(20);
+
+soc_test_ng:
+
+	for(i = 0; i < 38; i++) {
+		ret = fts_test_spi_write_direct(afe_membist_test_cmd[i], 11);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe set bist cmd[%d] fail ,ret=%d\n", i, ret);
+			tmp_afe_result = false;
+			goto test_err;
+		}
+	}
+
+	for(i = 0;i < 3;i++) {
+		ret = fts_test_spi_write_direct(afe_membist_test_read[0], 11);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe set bist cmd0[%d] fail ,ret=%d\n", i, ret);
+			tmp_afe_result = false;
+			goto test_err;
+		}
+
+		tmp_data = afe_membist_test_read[1][7];
+		afe_membist_test_read[1][7] += i;
+
+		ret = fts_test_spi_write_direct(afe_membist_test_read[1], 11);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe set bist cmd1[%d] fail ,ret=%d\n", i, ret);
+			tmp_afe_result = false;
+			afe_membist_test_read[1][7] = tmp_data;
+			goto test_err;
+		}
+		afe_membist_test_read[1][7] = tmp_data;
+
+		ret = fts_test_spi_write_direct(afe_membist_test_read[2], 11);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe set bist cmd2[%d] fail ,ret=%d\n", i, ret);
+			tmp_afe_result = false;
+			goto test_err;
+		}
+		ret = fts_test_spi_write_direct(afe_membist_test_read[3], 7);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe set bist cmd3[%d] fail ,ret=%d\n", i, ret);
+			tmp_afe_result = false;
+			goto test_err;
+		}
+		addr_value = 0x71;
+		ret = fts_test_spi_read_direct(&addr_value, 1, cmd_read_data, 5);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe read bist cmd[%d] finish fail ,ret=%d\n", i, ret);
+			tmp_afe_result = false;
+			goto test_err;
+		}
+		if ((i == 0) || (i == 1)) {
+			if ((cmd_read_data[1] == 0x55) && (cmd_read_data[2] == 0x55) && (cmd_read_data[3] == 0x00) && (cmd_read_data[4] == 0x00)) {
+				FTS_TEST_SAVE_INFO("AFE Bist cmd[%d] Finish success!!!\n", i);
+			} else {
+				tmp_afe_result = false;
+				FTS_TEST_SAVE_ERR("AFE membist cmd[%d] NG!!!\n", i);
+
+				FTS_TEST_SAVE_ERR("afe read bist[%d] finish ,cmd_read_data=0x%02X 0x%02X 0x%02X 0x%02X\n", i,
+				cmd_read_data[1], cmd_read_data[2], cmd_read_data[3], cmd_read_data[4]);
+				goto test_err;
+			}
+
+		} else {
+			if ((cmd_read_data[1] == 0x05) && (cmd_read_data[2] == 0x00) && (cmd_read_data[3] == 0x00) && (cmd_read_data[4] == 0x00)) {
+				FTS_TEST_SAVE_INFO("AFE Bist Finish cmd[%d] success!!!\n", i);
+			} else {
+				tmp_afe_result = false;
+				FTS_TEST_SAVE_ERR("AFE membist cmd[%d] NG!!!\n", i);
+
+				FTS_TEST_SAVE_ERR("afe read bist[%d] finish ,cmd_read_data=0x%02X 0x%02X 0x%02X 0x%02X\n", i,
+				cmd_read_data[1], cmd_read_data[2], cmd_read_data[3], cmd_read_data[4]);
+				goto test_err;
+			}
+		}
+
+		ret = fts_test_spi_write_direct(afe_membist_test_read[4], 11);
+		if (ret < 0) {
+			FTS_TEST_SAVE_ERR("afe set bist cmd fail ,ret=%d\n", ret);
+			tmp_afe_result = false;
+			goto test_err;
+		}
+	}
+
+test_err:
+
+
+	ft3681_hw_reset(ts_data, 200);
+	ft3681_set_spi_max_speed(spi_speed, 1);
+
+	/* result */
+	if ((tmp_soc_result) && (tmp_afe_result)) {
+		ret = TEST_RESULT_NORMAL;
+		*test_result = true;
+		FTS_TEST_SAVE_INFO("------MemBist Test PASS\n");
+	} else {
+		ret = TEST_RESULT_ABNORMAL;
+		*test_result = false;
+		FTS_TEST_SAVE_ERR("------ MemBist Test NG\n");
+	}
+
+	FTS_TEST_FUNC_EXIT();
+	return ret;
+}
+
+int ft3681_cal_test(void *chip_data, bool *test_result)
+{
+	int ret = 0;
+	u8 i = 0;
+	u8 read_value = 0;
+	struct chip_data_ft3681 *ts_data = (struct chip_data_ft3681 *)chip_data;
+
+	FTS_TEST_FUNC_ENTER();
+	FTS_TEST_SAVE_INFO("\n============ Test Item: Cal Test\n");
+
+	/* step1 write cal bin */
+	ft3681_write_cal_pramboot(ts_data);
+
+	/* step2 enter factory mode */
+	ret = ft3681_test_write_reg(0x00, 0x40);
+	if (ret < 0) {
+		TPD_INFO("write 0x00 fail,ret=%d\n", ret);
+		goto test_err;
+	}
+	sys_delay(10);
+
+	/* step3 enable cal test */
+	ret = ft3681_test_write_reg(0xB6, 0x01);
+	if (ret < 0) {
+		TPD_INFO("enable cal test fail,ret=%d\n", ret);
+		goto test_err;
+	}
+
+	/* step4 wait for cal test */
+	for(i = 0; i < 20 ;i++) {
+		ret = ft3681_test_read_reg(0xB7, &read_value);
+		if (ret < 0) {
+			TPD_INFO("read 0xB7 fail,ret=%d,read_value = 0x%x\n", ret, read_value);
+			goto test_err;
+		}
+
+		if ((read_value == 0x55) || (read_value == 0xAA)) {
+			break;
+		}
+
+		sys_delay(10);
+	}
+
+	test_err:
+
+	/* step5 result */
+	if (read_value == 0x55) {
+		ret = TEST_RESULT_NORMAL;
+		*test_result = true;
+	    FTS_TEST_SAVE_ERR("------Cal test PASS!!!\n");
+	} else {
+		ret = TEST_RESULT_ABNORMAL;
+		*test_result = false;
+		FTS_TEST_SAVE_ERR("------Cal test NG!!!\n");
+		if (i >= 20) {
+			FTS_TEST_SAVE_ERR("------Cal test timeout!!!\n");
+		}
+	}
+
+	ft3681_hw_reset(ts_data, 200);
+
+	FTS_TEST_FUNC_EXIT();
+	return ret;
+}
+
 static void ft3681_auto_write_result(struct chip_data_ft3681 *ts_data, int failed_count)
 {
 	//uint8_t  data_buf[64];
@@ -2374,8 +2709,10 @@ static void ft3681_auto_write_result(struct chip_data_ft3681 *ts_data, int faile
 	ft3681_test_save_data("Rawdata Test", ts_data->rawdata, node_num, rx_num, ts_data->csv_fd);
 	ft3681_test_save_data("Rawdata Uniformity Test", ts_data->rawdata_linearity, ts_data->rl_cnt, rx_num, ts_data->csv_fd);
 	ft3681_test_save_data("SCAP CB Test", ts_data->scap_cb, channel_num, rx_num, ts_data->csv_fd);
-	ft3681_test_save_data("SCAP CB Test", &ts_data->scap_gcb_rx, 1, 1, ts_data->csv_fd);
+	ft3681_test_save_data("SCAP CB Test", &ts_data->scap_gcb_rx_wateron, 1, 1, ts_data->csv_fd);
+	ft3681_test_save_data("SCAP CB Test", &ts_data->scap_gcb_tx_wateron, 1, 1, ts_data->csv_fd);
 	ft3681_test_save_data("SCAP CB Test", ts_data->scap_cb + channel_num, channel_num, rx_num, ts_data->csv_fd);
+	ft3681_test_save_data("SCAP CB Test", &ts_data->scap_gcb_rx, 1, 1, ts_data->csv_fd);
 	ft3681_test_save_data("SCAP CB Test", &ts_data->scap_gcb_tx, 1, 1, ts_data->csv_fd);
 	ft3681_test_save_data("SCAP Rawdata Test", ts_data->scap_rawdata, channel_num, rx_num, ts_data->csv_fd);
 	ft3681_test_save_data("SCAP Rawdata Test", ts_data->scap_rawdata + channel_num, channel_num, rx_num, ts_data->csv_fd);
@@ -2536,6 +2873,20 @@ static int ft3681_start_test(struct chip_data_ft3681 *ts_data)
 		test_result = false;
 		test_result |= (1 << 8);
 		failed_count += 1;
+	}
+
+	/*membist_test*/
+	ret = ft3681_membist_test(ts_data, &temp_result);
+	if ((ret < 0) || (false == temp_result)) {
+		test_result = false;
+		test_result |= (1 << 9);
+	}
+
+	/*cal test*/
+	ret = ft3681_cal_test(ts_data, &temp_result);
+	if ((ret < 0) || (false == temp_result)) {
+		test_result = false;
+		test_result |= false;
 	}
 
 	ft3681_auto_write_result(ts_data, failed_count);
