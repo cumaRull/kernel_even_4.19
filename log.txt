@@ -1,0 +1,60 @@
+patching file fs/Makefile
+patching file fs/dcache.c
+patching file fs/namei.c
+Hunk #2 succeeded at 1008 (offset 10 lines).
+Hunk #3 succeeded at 1091 (offset 10 lines).
+Hunk #4 succeeded at 1138 (offset 10 lines).
+Hunk #5 succeeded at 1664 (offset 10 lines).
+Hunk #6 succeeded at 1797 (offset 10 lines).
+Hunk #7 succeeded at 2293 (offset 10 lines).
+Hunk #8 succeeded at 2488 (offset 10 lines).
+Hunk #9 succeeded at 2955 (offset 16 lines).
+Hunk #10 succeeded at 2989 with fuzz 2 (offset 16 lines).
+Hunk #11 succeeded at 3132 (offset 33 lines).
+Hunk #12 succeeded at 3209 (offset 33 lines).
+Hunk #13 succeeded at 3361 (offset 33 lines).
+Hunk #14 succeeded at 3410 (offset 33 lines).
+Hunk #15 succeeded at 3435 (offset 33 lines).
+Hunk #16 succeeded at 3777 (offset 32 lines).
+Hunk #17 succeeded at 3797 (offset 32 lines).
+patching file fs/namespace.c
+Hunk #1 FAILED at 27.
+Hunk #2 succeeded at 104 (offset 7 lines).
+Hunk #3 succeeded at 128 (offset 7 lines).
+Hunk #4 succeeded at 156 (offset 7 lines).
+Hunk #5 succeeded at 182 (offset 7 lines).
+Hunk #6 succeeded at 236 (offset 7 lines).
+Hunk #7 succeeded at 1033 (offset 7 lines).
+Hunk #8 succeeded at 1069 (offset 7 lines).
+Hunk #9 succeeded at 1107 (offset 7 lines).
+Hunk #10 succeeded at 1204 (offset 7 lines).
+Hunk #11 succeeded at 2412 (offset -15 lines).
+Hunk #12 succeeded at 3042 (offset -5 lines).
+Hunk #13 succeeded at 3128 (offset -5 lines).
+Hunk #14 succeeded at 3151 (offset -5 lines).
+Hunk #15 succeeded at 3196 (offset -5 lines).
+Hunk #16 succeeded at 3765 (offset -5 lines).
+1 out of 16 hunks FAILED -- saving rejects to file fs/namespace.c.rej
+patching file fs/notify/fdinfo.c
+Hunk #4 FAILED at 101.
+1 out of 4 hunks FAILED -- saving rejects to file fs/notify/fdinfo.c.rej
+patching file fs/overlayfs/inode.c
+patching file fs/overlayfs/readdir.c
+patching file fs/overlayfs/super.c
+patching file fs/proc/cmdline.c
+patching file fs/proc/fd.c
+patching file fs/proc/task_mmu.c
+Hunk #1 FAILED at 20.
+1 out of 3 hunks FAILED -- saving rejects to file fs/proc/task_mmu.c.rej
+patching file fs/proc_namespace.c
+patching file fs/readdir.c
+patching file fs/stat.c
+patching file fs/statfs.c
+patching file include/linux/mount.h
+patching file include/linux/sched.h
+Hunk #1 succeeded at 1475 (offset -23 lines).
+Hunk #2 FAILED at 1516.
+1 out of 2 hunks FAILED -- saving rejects to file include/linux/sched.h.rej
+patching file kernel/kallsyms.c
+patching file kernel/sys.c
+Hunk #1 succeeded at 1251 (offset 11 lines).
